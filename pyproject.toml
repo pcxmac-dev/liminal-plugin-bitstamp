@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liminal-plugin-bitstamp"
+version = "1.3.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
+description = "Bitstamp for Liminal: crypto minute bars from 2011 and its public trade stream, no key."
+readme = "README.md"
+requires-python = ">=3.10"
+# the app it plugs into; which of its releases can load it is the plugin API the plugin declares
+# (PLUGIN.api, checked when the app loads it), not this line
+dependencies = ["liminal"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."liminal.providers"]
+bitstamp = "liminal_plugin_bitstamp:PLUGIN"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
