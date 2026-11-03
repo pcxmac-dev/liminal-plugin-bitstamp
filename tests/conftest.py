@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def no_saved_keys(monkeypatch):
     """Tests never read the user's saved keys (their user environment variables)."""
-    from liminal import config
+    from liminal_lib import config
 
     monkeypatch.setattr(config, "saved_user_keys", lambda: {})
 
@@ -16,7 +16,7 @@ def no_saved_keys(monkeypatch):
 @pytest.fixture(autouse=True)
 def no_found_limits(monkeypatch):
     """Nor the limits kept from the user's last capability scans (in their database)."""
-    from liminal.sources import registry
+    from liminal_lib.sources import registry
 
     monkeypatch.setattr(registry, "found_limits", lambda name, settings: [])
 

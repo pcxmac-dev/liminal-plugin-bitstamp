@@ -13,11 +13,11 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Iterator
 
-from liminal.config import Tier
-from liminal.models import Instrument
-from liminal.sources.archive import EXCHANGE_FRAMES, Archive as _Archive, bounds as _bounds
-from liminal.sources.registry import Provider, public_client
-from liminal.sources.stream import Live, Reconnect, trade
+from liminal_lib.config import Tier
+from liminal_lib.models import Instrument
+from liminal_lib.sources.archive import EXCHANGE_FRAMES, Archive as _Archive, bounds as _bounds
+from liminal_lib.sources.registry import Provider, public_client
+from liminal_lib.sources.stream import Live, Reconnect, trade
 
 BASE_URL = "https://www.bitstamp.net/api/v2"
 # Its plan and caps (once the app's config.PUBLIC_FEEDS["bitstamp"]): Bitstamp allows 8,000 requests

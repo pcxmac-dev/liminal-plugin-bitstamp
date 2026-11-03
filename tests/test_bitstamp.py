@@ -9,12 +9,12 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal import composite
-from liminal.config import load_settings
-from liminal.sources import is_archive, markets, provider, registry, supports
-from liminal.sources.http import PublicClient
-from liminal.sources.stream import Reconnect
-from liminal.symbols import resolve
+from liminal_lib import composite
+from liminal_lib.config import load_settings
+from liminal_lib.sources import is_archive, markets, provider, registry, supports
+from liminal_lib.sources.http import PublicClient
+from liminal_lib.sources.stream import Reconnect
+from liminal_lib.symbols import resolve
 
 import liminal_plugin_bitstamp
 from liminal_plugin_bitstamp import PER_DAY, PER_RUN, TIER, BitstampSource, BitstampStream
