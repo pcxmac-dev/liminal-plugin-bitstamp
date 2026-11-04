@@ -1,10 +1,11 @@
 """Bitstamp (bitstamp.net) for Liminal: crypto minute bars from 2011 and its public trade stream, no key;
 an exchange of its own.
 
-A Liminal plugin released on its own (liminal.sources.registry: Provider), registered under the
-entry point group `liminal.providers` as `bitstamp`. It relies on plugin API 1.6 and nothing of the
-app outside it (docs/ARCHITECTURE.md in liminal: "Providers are plugins"); its version is this
-distribution's (pyproject.toml), so PLUGIN.version is left empty.
+A Liminal plugin released on its own, a class on plugin API 2.0 (liminal_lib.sources.archive:
+CryptoVenuePlugin, a crypto exchange's; liminal-lib 1.3.0: what it declares class attributes, what
+it does methods), registered under the entry point group `liminal.providers` as `bitstamp`. It relies
+on nothing of the app outside the contract (docs/ARCHITECTURE.md in liminal-app: "Providers are
+plugins"); its version is this distribution's (pyproject.toml), so PLUGIN.version is left empty.
 """
 from __future__ import annotations
 
@@ -14,9 +15,11 @@ from datetime import date
 from typing import Iterator
 
 from liminal_lib.config import Tier
+from liminal_lib.freshness import Delay
 from liminal_lib.models import Instrument
 from liminal_lib.sources.archive import EXCHANGE_FRAMES, Archive as _Archive, bounds as _bounds
-from liminal_lib.sources.registry import Provider, public_client
+from liminal_lib.sources.archive import CryptoVenuePlugin
+from liminal_lib.sources.registry import FeedPlugin
 from liminal_lib.sources.stream import Live, Reconnect, trade
 
 BASE_URL = "https://www.bitstamp.net/api/v2"
@@ -115,14 +118,36 @@ class BitstampStream:
                                 d.get("amount_str", d["amount"]), tid))]
 
 
-PLUGIN = Provider(
-    api="1.6",  # the contract it needs (its stream and client in it); its version: the distribution's
-    name="bitstamp", title="Bitstamp",
-    build=lambda settings, budget: BitstampSource(public_client("bitstamp", BASE_URL, settings, budget)),
-    assets=frozenset({"crypto"}), order=20, about="crypto minute bars from 2011 (no key)",
-    tier=TIER, per_run=PER_RUN, per_day=PER_DAY, limits="8,000 requests per 10 minutes", kind="exchange",
-    per_request={"day": BitstampSource.PAGE, "minute": BitstampSource.PAGE},
-    streams={"crypto": "real time, public trades (no key), coins open on a chart"},
-    live=(Live("bitstamp", "crypto", stream=BitstampStream),),
-    carries=lambda spec: spec.ticker.upper() in BITSTAMP_PAIRS,
-)
+class BitstampPlugin(CryptoVenuePlugin):
+    """The feed's plugin, a crypto exchange's (its `assets` and `kind`; its source on the contract's
+    public client at `base_url`): what it declares as attributes, what it does as methods (the pairs
+    it carries); the contract's defaults for the rest. Its view is the contract's own, as its record's
+    was: its fixed plan and caps, all the history it holds, CRYPTO_VENUE_DAYS not applied (the app
+    limits Coinbase and Bitfinex with it)."""
+
+    api = "2.0"  # the contract it is written for (the class contract); its version: the distribution's
+    name = "bitstamp"
+    title = "Bitstamp"
+    about = "crypto minute bars from 2011 (no key)"
+    order = 20
+    base_url = BASE_URL
+    source_class = BitstampSource
+    tier = TIER
+    per_run = PER_RUN
+    per_day = PER_DAY
+    limits = "8,000 requests per 10 minutes"
+    per_request = {"day": BitstampSource.PAGE, "minute": BitstampSource.PAGE}
+    streams = {"crypto": "real time, public trades (no key), coins open on a chart"}
+    live = (Live("bitstamp", "crypto", stream=BitstampStream),)
+    # when its data is published (the library's freshness row for its plan): each minute once it closes
+    delays = {"bitstamp-public": {"crypto": Delay("delay")}}
+
+    def view(self, base):
+        """The contract's default (FeedPlugin.view): its fixed tier and caps, the history unlimited."""
+        return FeedPlugin.view(self, base)
+
+    def carries(self, spec):
+        return spec.ticker.upper() in BITSTAMP_PAIRS
+
+
+PLUGIN = BitstampPlugin()

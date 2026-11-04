@@ -5,8 +5,9 @@ on:
   pull_request:
 
 env:
-  # the library release it is tested against (its plugin API): main until a tag is pinned
-  LIMINAL_LIB_REF: main
+  # the library branch it is tested against (plugin API 2.0, liminal-lib 1.3.0): release/0.2.0 until the
+  # release, main after it
+  LIMINAL_LIB_REF: release/0.2.0
 
 jobs:
   test:

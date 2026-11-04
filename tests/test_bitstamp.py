@@ -9,15 +9,17 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal_lib import composite
+from liminal_lib import composite, freshness
 from liminal_lib.config import load_settings
+from liminal_lib.freshness import Delay
 from liminal_lib.sources import is_archive, markets, provider, registry, supports
+from liminal_lib.sources.archive import CryptoVenuePlugin
 from liminal_lib.sources.http import PublicClient
 from liminal_lib.sources.stream import Reconnect
 from liminal_lib.symbols import resolve
 
 import liminal_plugin_bitstamp
-from liminal_plugin_bitstamp import PER_DAY, PER_RUN, TIER, BitstampSource, BitstampStream
+from liminal_plugin_bitstamp import BASE_URL, PER_DAY, PER_RUN, TIER, BitstampPlugin, BitstampSource, BitstampStream
 
 from .conftest import FakeResponse, FakeSession
 
@@ -92,7 +94,7 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "bitstamp" in where or "bitstamp" in why]
     row = {r["name"]: r for r in registry.menu()}["bitstamp"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-bitstamp"), "1.6")
+    assert (row["version"], row["api"]) == (version("liminal-plugin-bitstamp"), "2.0")
 
 
 def test_it_keeps_the_facts_it_had_built_in():
@@ -106,3 +108,20 @@ def test_it_keeps_the_facts_it_had_built_in():
     assert composite.feed_kind("bitstamp", "crypto") == "exchange"
     p = provider("bitstamp")
     assert [(f.name, f.asset, f.stream) for f in p.live] == [("bitstamp", "crypto", BitstampStream)]
+
+
+def test_it_is_a_class_on_the_contract_and_the_app_loads_it_as_one():
+    p = liminal_plugin_bitstamp.PLUGIN
+    assert isinstance(p, BitstampPlugin) and isinstance(p, CryptoVenuePlugin) and p.api == "2.0" and not p.is_record
+    assert p.assets == frozenset({"crypto"}) and p.kind == "exchange"  # a crypto venue's, from its base
+    assert p.gives("build") and p.gives("view") and p.gives("carries")
+    assert not p.has_scan and not p.has_settings and not p.gives("rate") and not p.gives("markets")
+    assert p.delays == {"bitstamp-public": {"crypto": Delay("delay")}} and p.hours == {}
+    loaded = registry.reload()["bitstamp"]
+    assert type(loaded) is BitstampPlugin and (loaded.version, loaded.api) == (version("liminal-plugin-bitstamp"), "2.0")
+    assert not [why for where, why in registry.errors() if "bitstamp" in where or "bitstamp" in why]
+    src = loaded.build(load_settings(env={}, env_file=None), 5)  # its base's build: its source on the public client
+    assert isinstance(src, BitstampSource) and isinstance(src.client, PublicClient) and src.client.base_url == BASE_URL
+    assert freshness.plan_delay(TIER, "crypto").kind == "delay"  # its own rule (BitstampPlugin.delays; the library's too)
+    moved = p.with_(order=1)  # a changed copy (the registry's version and origin come this way)
+    assert type(moved) is BitstampPlugin and moved.order == 1 and p.order == 20
