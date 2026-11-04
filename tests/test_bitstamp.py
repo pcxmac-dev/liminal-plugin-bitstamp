@@ -9,17 +9,17 @@ from importlib.metadata import version
 
 import pytest
 
-from liminal_lib import composite, freshness
-from liminal_lib.config import load_settings
-from liminal_lib.freshness import Delay
-from liminal_lib.sources import is_archive, markets, provider, registry, supports
-from liminal_lib.sources.archive import CryptoVenuePlugin
-from liminal_lib.sources.http import PublicClient
-from liminal_lib.sources.stream import Reconnect
-from liminal_lib.symbols import resolve
+from liminal_libs import composite, freshness
+from liminal_libs.config import load_settings
+from liminal_libs.freshness import Delay
+from liminal_libs.sources import is_archive, markets, provider, registry, supports
+from liminal_libs.sources.archive import CryptoVenuePlugin
+from liminal_libs.sources.http import PublicClient
+from liminal_libs.sources.stream import Reconnect
+from liminal_libs.symbols import resolve
 
-import liminal_plugin_bitstamp
-from liminal_plugin_bitstamp import BASE_URL, PER_DAY, PER_RUN, TIER, BitstampPlugin, BitstampSource, BitstampStream
+import plugin_integrator_bitstamp
+from plugin_integrator_bitstamp import BASE_URL, PER_DAY, PER_RUN, TIER, BitstampPlugin, BitstampSource, BitstampStream
 
 from .conftest import FakeResponse, FakeSession
 
@@ -89,12 +89,12 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     registry.reload()
     p = provider("bitstamp")
     assert p is not None, dict(registry.errors())
-    assert p.origin in {"package: liminal-plugin-bitstamp (liminal_plugin_bitstamp:PLUGIN)", "plugins/liminal-plugin-bitstamp (liminal_plugin_bitstamp:PLUGIN)"}  # its package, or its checkout in the workspace\'s plugin directory
-    assert p.version == version("liminal-plugin-bitstamp") and liminal_plugin_bitstamp.PLUGIN.version == ""
+    assert p.origin in {"package: plugin-integrator-bitstamp (plugin_integrator_bitstamp:PLUGIN)", "plugins/plugin-integrator-bitstamp (plugin_integrator_bitstamp:PLUGIN)"}  # its package, or its checkout in the workspace\'s plugin directory
+    assert p.version == version("plugin-integrator-bitstamp") and plugin_integrator_bitstamp.PLUGIN.version == ""
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "bitstamp" in where or "bitstamp" in why]
     row = {r["name"]: r for r in registry.menu()}["bitstamp"]
-    assert (row["version"], row["api"]) == (version("liminal-plugin-bitstamp"), "2.0")
+    assert (row["version"], row["api"]) == (version("plugin-integrator-bitstamp"), "2.0")
 
 
 def test_it_keeps_the_facts_it_had_built_in():
@@ -111,14 +111,14 @@ def test_it_keeps_the_facts_it_had_built_in():
 
 
 def test_it_is_a_class_on_the_contract_and_the_app_loads_it_as_one():
-    p = liminal_plugin_bitstamp.PLUGIN
+    p = plugin_integrator_bitstamp.PLUGIN
     assert isinstance(p, BitstampPlugin) and isinstance(p, CryptoVenuePlugin) and p.api == "2.0" and not p.is_record
     assert p.assets == frozenset({"crypto"}) and p.kind == "exchange"  # a crypto venue's, from its base
     assert p.gives("build") and p.gives("view") and p.gives("carries")
     assert not p.has_scan and not p.has_settings and not p.gives("rate") and not p.gives("markets")
     assert p.delays == {"bitstamp-public": {"crypto": Delay("delay")}} and p.hours == {}
     loaded = registry.reload()["bitstamp"]
-    assert type(loaded) is BitstampPlugin and (loaded.version, loaded.api) == (version("liminal-plugin-bitstamp"), "2.0")
+    assert type(loaded) is BitstampPlugin and (loaded.version, loaded.api) == (version("plugin-integrator-bitstamp"), "2.0")
     assert not [why for where, why in registry.errors() if "bitstamp" in where or "bitstamp" in why]
     src = loaded.build(load_settings(env={}, env_file=None), 5)  # its base's build: its source on the public client
     assert isinstance(src, BitstampSource) and isinstance(src.client, PublicClient) and src.client.base_url == BASE_URL
